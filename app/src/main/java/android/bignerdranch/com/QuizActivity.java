@@ -10,9 +10,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Arrays;
-
-
 public class QuizActivity extends AppCompatActivity {
     //debug constants
     private static final String TAG = "QuizActivity";
@@ -58,7 +55,7 @@ public class QuizActivity extends AppCompatActivity {
         } else {
             mCurrentIndex = 0;
             mCorrectAnswersCount = 0;
-            mQuestionBank =  new Question[]{
+            mQuestionBank = new Question[]{
                     new Question(R.string.question_austalia, true),
                     new Question(R.string.question_oceans, true),
                     new Question(R.string.question_mideast, false),
@@ -170,7 +167,7 @@ public class QuizActivity extends AppCompatActivity {
         if (mQuestionBank[mCurrentIndex].getAlreadyAnswer()) {
             disableAnswer();
         } else {
-           enableAnswer();
+            enableAnswer();
         }
     }
 
