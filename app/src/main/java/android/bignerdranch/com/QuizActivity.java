@@ -1,5 +1,6 @@
 package android.bignerdranch.com;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -19,11 +20,14 @@ public class QuizActivity extends AppCompatActivity {
     private static final String KEY_QUESTIONS = "questions";
     private static final String KEY_CORRECT_ANSWERS = "questions";
 
-
+    //buttons
     private Button mTrueButton;
     private Button mFalseButton;
+    private Button mCheatButton;
     private ImageButton mPrevButton;
     private ImageButton mNextButton;
+
+    //textview
     private TextView mQuestionTextView;
 
     private Question[] mQuestionBank;
@@ -83,6 +87,7 @@ public class QuizActivity extends AppCompatActivity {
                 disableAnswer();
             }
         });
+
         mFalseButton = findViewById(R.id.false_button);
         mFalseButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -91,7 +96,6 @@ public class QuizActivity extends AppCompatActivity {
                 disableAnswer();
             }
         });
-
 
         mNextButton = findViewById(R.id.next_button);
         mNextButton.setOnClickListener(new View.OnClickListener() {
@@ -102,6 +106,7 @@ public class QuizActivity extends AppCompatActivity {
 
             }
         });
+
         mPrevButton = findViewById(R.id.prev_button);
         mPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -111,6 +116,17 @@ public class QuizActivity extends AppCompatActivity {
             }
         });
 
+
+        mCheatButton = findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // start activity
+            }
+        });
+
+
+        //initializing questions
         updateQuestion();
     }
 
@@ -133,7 +149,7 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         Log.i(TAG, "onSaveInstanceState");
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
