@@ -17,18 +17,21 @@ import com.google.gson.Gson;
 
 
 public class QuizActivity extends AppCompatActivity {
+
     //debug constants
     private static final String TAG = "QuizActivity";
 
     //service constant
     private static final String EXTRA_ANSWER_IS_TRUE = "android.bignerdranch.com.answer_is_true";
     private static final String EXTRA_ANSWER_SHOWN = "android.bignerdranch.com.answer_shown";
+    private static final String CHEAT_ATTEMPT_COUNTER = "android.bignerdranch.com.cheat_count";
 
 
     //save indexes
     private static final String KEY_INDEX = "index";
     private static final String KEY_QUESTIONS = "questions";
     private static final String KEY_CORRECT_ANSWERS = "questions_сount";
+    private static final String CHEAT_COUNTER = "cheat_attempts";
 
     //intent's codes
     private static final int REQUEST_CODE_CHEAT = 0;
@@ -46,7 +49,8 @@ public class QuizActivity extends AppCompatActivity {
     private Question[] mQuestionBank;
     private int mCurrentIndex;
     private int mCorrectAnswersCount;
-    private boolean mIsCheater;
+
+    private static int cheatAttemptsCounter = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,8 +74,10 @@ public class QuizActivity extends AppCompatActivity {
                             new Question(R.string.question_asia, true)
                     };
             mCorrectAnswersCount = savedInstanceState.getInt(KEY_CORRECT_ANSWERS, 0);
+            cheatAttemptsCounter = savedInstanceState.getInt(CHEAT_COUNTER, 3);
 
         } else {
+            cheatAttemptsCounter = 3;
             mCurrentIndex = 0;
             mCorrectAnswersCount = 0;
             mQuestionBank = new Question[]{
@@ -138,7 +144,7 @@ public class QuizActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // start activity
                 boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
-                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue, cheatAttemptsCounter);
                 startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
         });
@@ -146,6 +152,7 @@ public class QuizActivity extends AppCompatActivity {
 
         //initializing questions
         updateQuestion();
+        checkCheat();
     }
 
     @Override
@@ -175,6 +182,7 @@ public class QuizActivity extends AppCompatActivity {
 
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
         savedInstanceState.putString(KEY_QUESTIONS, json);
+        savedInstanceState.putInt(CHEAT_COUNTER, cheatAttemptsCounter);
     }
 
     @Override
@@ -200,6 +208,7 @@ public class QuizActivity extends AppCompatActivity {
                 return;
             }
             mQuestionBank[mCurrentIndex].setCheated(wasAnswerShown(data));
+            cheatAttemptsCounter = getCheatAttemptsCounter(data);
         }
     }
 
@@ -212,6 +221,15 @@ public class QuizActivity extends AppCompatActivity {
         mFalseButton.setEnabled(false);
         mTrueButton.setEnabled(false);
     }
+
+    public void checkCheat() {
+        if(cheatAttemptsCounter == 0) {
+            mCheatButton.setEnabled(false);
+        } else {
+            mCheatButton.setEnabled(true);
+        }
+    }
+
 
     private void updateQuestion() {
         int question = mQuestionBank[mCurrentIndex].getTextRestId();
@@ -227,9 +245,13 @@ public class QuizActivity extends AppCompatActivity {
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
         boolean isAlreadyAnswered = mQuestionBank[mCurrentIndex].getAlreadyAnswer();
 
+        if (cheatAttemptsCounter == 0) {
+            mCheatButton.setEnabled(false);
+        }
+
         int messageResId;
         if (!isAlreadyAnswered) {
-            if(mQuestionBank[mCurrentIndex].isCheated()) {
+            if (mQuestionBank[mCurrentIndex].isCheated()) {
                 messageResId = R.string.judgment_toast;
             } else {
                 if (userPressedTrue == answerIsTrue) {
@@ -260,5 +282,9 @@ public class QuizActivity extends AppCompatActivity {
 
     public static boolean wasAnswerShown(Intent result) {
         return result.getBooleanExtra(EXTRA_ANSWER_SHOWN, false);
+    }
+
+    public static int getCheatAttemptsCounter(Intent result) {
+        return result.getIntExtra(CHEAT_ATTEMPT_COUNTER, 3);
     }
 }
