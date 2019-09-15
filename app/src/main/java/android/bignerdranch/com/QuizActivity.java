@@ -3,6 +3,8 @@ package android.bignerdranch.com;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -11,14 +13,25 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
+
 public class QuizActivity extends AppCompatActivity {
     //debug constants
     private static final String TAG = "QuizActivity";
 
+    //service constant
+    private static final String EXTRA_ANSWER_IS_TRUE = "android.bignerdranch.com.answer_is_true";
+    private static final String EXTRA_ANSWER_SHOWN = "android.bignerdranch.com.answer_shown";
+
+
     //save indexes
     private static final String KEY_INDEX = "index";
     private static final String KEY_QUESTIONS = "questions";
-    private static final String KEY_CORRECT_ANSWERS = "questions";
+    private static final String KEY_CORRECT_ANSWERS = "questions_сount";
+
+    //intent's codes
+    private static final int REQUEST_CODE_CHEAT = 0;
 
     //buttons
     private Button mTrueButton;
@@ -33,6 +46,7 @@ public class QuizActivity extends AppCompatActivity {
     private Question[] mQuestionBank;
     private int mCurrentIndex;
     private int mCorrectAnswersCount;
+    private boolean mIsCheater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,9 +57,10 @@ public class QuizActivity extends AppCompatActivity {
         // extracting saved data
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+            Gson gson = new Gson();
 
             mQuestionBank = savedInstanceState.get(KEY_QUESTIONS) != null ?
-                    (Question[]) savedInstanceState.get(KEY_QUESTIONS) :
+                    gson.fromJson(savedInstanceState.get(KEY_QUESTIONS).toString(), Question[].class) :
                     new Question[]{
                             new Question(R.string.question_austalia, true),
                             new Question(R.string.question_oceans, true),
@@ -122,6 +137,9 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // start activity
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
         });
 
@@ -152,7 +170,11 @@ public class QuizActivity extends AppCompatActivity {
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         Log.i(TAG, "onSaveInstanceState");
+        Gson gson = new Gson();
+        String json = gson.toJson(mQuestionBank);
+
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
+        savedInstanceState.putString(KEY_QUESTIONS, json);
     }
 
     @Override
@@ -165,6 +187,20 @@ public class QuizActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy() called");
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) {
+                return;
+            }
+            mQuestionBank[mCurrentIndex].setCheated(wasAnswerShown(data));
+        }
     }
 
     public void enableAnswer() {
@@ -193,15 +229,17 @@ public class QuizActivity extends AppCompatActivity {
 
         int messageResId;
         if (!isAlreadyAnswered) {
-            if (userPressedTrue == answerIsTrue) {
-                mCorrectAnswersCount++;
-                messageResId = R.string.correct_toast;
-                mQuestionBank[mCurrentIndex].setAlreadyAnswer();
+            if(mQuestionBank[mCurrentIndex].isCheated()) {
+                messageResId = R.string.judgment_toast;
             } else {
-                messageResId = R.string.incorrect_toast;
-                mQuestionBank[mCurrentIndex].setAlreadyAnswer();
+                if (userPressedTrue == answerIsTrue) {
+                    mCorrectAnswersCount++;
+                    messageResId = R.string.correct_toast;
+                } else {
+                    messageResId = R.string.incorrect_toast;
+                }
             }
-
+            mQuestionBank[mCurrentIndex].setAlreadyAnswer();
             Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
         } else {
             messageResId = R.string.alreadyAnswer;
@@ -218,5 +256,9 @@ public class QuizActivity extends AppCompatActivity {
         int score = mCorrectAnswersCount * 100 / mQuestionBank.length;
         String message = getString(R.string.toast_score, score);
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    public static boolean wasAnswerShown(Intent result) {
+        return result.getBooleanExtra(EXTRA_ANSWER_SHOWN, false);
     }
 }
